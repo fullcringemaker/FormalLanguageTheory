@@ -160,7 +160,20 @@ fn extended_regex_accepts(word: &str) -> bool {
 }
 
 fn afa_accepts(word: &str) -> bool {
-    extended_regex_accepts(word)
+    if !only_a_b(word) {
+        return false;
+    }
+
+    let n = word.len();
+    if n < 8 {
+        return false;
+    }
+    let suffix_ok = ends_with_ababxx(word);
+    let prefix_ok = match block_end_index(word) {
+        Some(end) => end <= n - 6,
+        None => false,
+    };
+    prefix_ok && suffix_ok
 }
 
 fn random_word<R: Rng + ?Sized>(rng: &mut R, min_len: usize, max_len: usize) -> String {
@@ -175,10 +188,8 @@ fn random_word<R: Rng + ?Sized>(rng: &mut R, min_len: usize, max_len: usize) -> 
 
 fn main() {
     let tests: usize = 100000;
-    let academic_regex =
-        Regex::new("^((a|b)*aa*b(a|b)*|bb*a(a|b)*)abab(a|b)(a|b)$").unwrap();
-    let equivalent_regex =
-        Regex::new("^(aa*b|bb*a)(a|b)*abab(a|b)(a|b)$").unwrap();
+    let academic_regex = Regex::new("^((a|b)*aa*b(a|b)*|bb*a(a|b)*)abab(a|b)(a|b)$").unwrap();
+    let equivalent_regex = Regex::new("^(aa*b|bb*a)(a|b)*abab(a|b)(a|b)$").unwrap();
     let extended_pattern = r"^(?=[ab]*$)(a+b|b+a).*abab..$";
     let extended_regex = FancyRegex::new(extended_pattern).unwrap();
     let mut rng = rand::thread_rng();
@@ -199,23 +210,10 @@ fn main() {
             && r_academic == r_extended_re)
         {
             println!("Word: {}", word);
-            println!(
-                "academic regex ((a|b)*aa*b(a|b)*|bb*a(a|b)*)abab(a|b)(a|b): {}",
-                r_academic
-            );
-            println!(
-                "equivalent regex (aa*b|bb*a)(a|b)*abab(a|b)(a|b): {}",
-                r_equiv
-            );
-            println!(
-                "extended regex with lookahead (fancy-regex) {}: {}",
-                extended_pattern,
-                r_extended_re
-            );
-            println!(
-                "extended regex (manual implementation): {}",
-                r_extended
-            );
+            println!("academic regex ((a|b)*aa*b(a|b)*|bb*a(a|b)*)abab(a|b)(a|b): {}", r_academic);
+            println!("equivalent regex (aa*b|bb*a)(a|b)*abab(a|b)(a|b): {}", r_equiv);
+            println!("extended regex {}: {}", extended_pattern, r_extended_re);
+            println!("extended regex (manual implementation): {}", r_extended);
             println!("DFA: {}", r_dfa);
             println!("NFA: {}", r_nfa);
             println!("AFA: {}", r_afa);
