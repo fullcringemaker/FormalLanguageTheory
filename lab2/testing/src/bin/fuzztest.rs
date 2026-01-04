@@ -1,6 +1,6 @@
+use fancy_regex::Regex as FancyRegex;
 use rand::Rng;
 use regex::Regex;
-use fancy_regex::Regex as FancyRegex;
 use std::collections::HashSet;
 
 fn dfa_accepts(word: &str) -> bool {
@@ -64,6 +64,7 @@ fn nfa_accepts(word: &str) -> bool {
         vec![9],
         vec![],
     ];
+
     let mut states: HashSet<usize> = HashSet::new();
     states.insert(0);
     for ch in word.chars() {
@@ -86,94 +87,177 @@ fn nfa_accepts(word: &str) -> bool {
     states.contains(&9)
 }
 
-fn only_a_b(word: &str) -> bool {
-    for b in word.bytes() {
+fn prefix_accepts(prefix: &str) -> bool {
+    let bytes = prefix.as_bytes();
+    if bytes.is_empty() {
+        return false;
+    }
+    let mut state: u8 = 0;
+    for &b in bytes {
+        state = match (state, b) {
+            (0, b'a') => 1,
+            (0, b'b') => 2,
+            (1, b'a') => 1,
+            (1, b'b') => 3,
+            (2, b'b') => 2,
+            (2, b'a') => 3,
+            (3, b'a') => 3,
+            (3, b'b') => 3,
+            _ => return false,
+        };
+    }
+    state == 3
+}
+
+fn suffix_accepts(word: &str) -> bool {
+    let mut states: HashSet<u8> = HashSet::new();
+    states.insert(0);
+    for ch in word.bytes() {
+        let mut next: HashSet<u8> = HashSet::new();
+        for &s in states.iter() {
+            match s {
+                0 => {
+                    if ch == b'a' {
+                        next.insert(0);
+                        next.insert(1);
+                    } else if ch == b'b' {
+                        next.insert(0);
+                    } else {
+                        return false;
+                    }
+                }
+                1 => {
+                    if ch == b'b' {
+                        next.insert(2);
+                    }
+                }
+                2 => {
+                    if ch == b'a' {
+                        next.insert(3);
+                    }
+                }
+                3 => {
+                    if ch == b'b' {
+                        next.insert(4);
+                    }
+                }
+                4 => {
+                    if ch == b'a' || ch == b'b' {
+                        next.insert(5);
+                    }
+                }
+                5 => {
+                    if ch == b'a' || ch == b'b' {
+                        next.insert(6);
+                    }
+                }
+                _ => {}
+            }
+        }
+        if next.is_empty() {
+            return false;
+        }
+        states = next;
+    }
+    states.contains(&6)
+}
+
+fn afa_accepts(word: &str) -> bool {
+    let bytes = word.as_bytes();
+    let n = bytes.len();
+    if n < 8 {
+        return false;
+    }
+    for &b in bytes {
         if b != b'a' && b != b'b' {
             return false;
         }
     }
-    true
+    let prefix_end = n - 6;
+    let prefix = &word[..prefix_end];
+    prefix_accepts(prefix) && suffix_accepts(word)
 }
 
-fn ends_with_ababxx(word: &str) -> bool {
+fn ext_automaton_accepts(word: &str) -> bool {
     let bytes = word.as_bytes();
     let n = bytes.len();
-    if n < 6 {
+    if n < 8 {
         return false;
     }
-    if bytes[n - 6] != b'a'
-        || bytes[n - 5] != b'b'
-        || bytes[n - 4] != b'a'
-        || bytes[n - 3] != b'b'
-    {
+    let prefix_end = n - 6;
+    let mut alphabet_ok: bool = true;
+    let mut prefix_state: u8 = 0;
+    let mut suffix_states: HashSet<u8> = HashSet::new();
+    suffix_states.insert(0);
+    for (i, &b) in bytes.iter().enumerate() {
+        if b != b'a' && b != b'b' {
+            alphabet_ok = false;
+            break;
+        }
+        if i < prefix_end {
+            prefix_state = match (prefix_state, b) {
+                (0, b'a') => 1,
+                (0, b'b') => 2,
+                (1, b'a') => 1,
+                (1, b'b') => 3,
+                (2, b'b') => 2,
+                (2, b'a') => 3,
+                (3, b'a') => 3,
+                (3, b'b') => 3,
+                _ => 255,
+            };
+        }
+        let mut next_suffix: HashSet<u8> = HashSet::new();
+        for &s in suffix_states.iter() {
+            match s {
+                0 => {
+                    if b == b'a' {
+                        next_suffix.insert(0);
+                        next_suffix.insert(1);
+                    } else {
+                        next_suffix.insert(0);
+                    }
+                }
+                1 => {
+                    if b == b'b' {
+                        next_suffix.insert(2);
+                    }
+                }
+                2 => {
+                    if b == b'a' {
+                        next_suffix.insert(3);
+                    }
+                }
+                3 => {
+                    if b == b'b' {
+                        next_suffix.insert(4);
+                    }
+                }
+                4 => {
+                    next_suffix.insert(5);
+                }
+                5 => {
+                    next_suffix.insert(6);
+                }
+                _ => {}
+            }
+        }
+        if next_suffix.is_empty() {
+            return false;
+        }
+        suffix_states = next_suffix;
+    }
+    if !alphabet_ok {
         return false;
     }
-    if (bytes[n - 2] != b'a' && bytes[n - 2] != b'b')
-        || (bytes[n - 1] != b'a' && bytes[n - 1] != b'b')
-    {
+    if prefix_end == 0 {
         return false;
     }
-    true
-}
-
-fn block_end_index(word: &str) -> Option<usize> {
-    let bytes = word.as_bytes();
-    if bytes.len() < 2 {
-        return None;
-    }
-    let first = bytes[0];
-    if first != b'a' && first != b'b' {
-        return None;
-    }
-    let mut i: usize = 1;
-    while i < bytes.len() && bytes[i] == first {
-        i += 1;
-    }
-    if i >= bytes.len() {
-        return None;
-    }
-    let other = bytes[i];
-    if first == b'a' && other != b'b' {
-        return None;
-    }
-    if first == b'b' && other != b'a' {
-        return None;
-    }
-    Some(i + 1)
+    (prefix_state == 3) && suffix_states.contains(&6)
 }
 
 fn extended_regex_accepts(word: &str) -> bool {
-    if !only_a_b(word) {
-        return false;
-    }
-    let n = word.len();
-    if n < 8 {
-        return false;
-    }
-    if !ends_with_ababxx(word) {
-        return false;
-    }
-    match block_end_index(word) {
-        Some(end) => end <= n - 6,
-        None => false,
-    }
-}
-
-fn afa_accepts(word: &str) -> bool {
-    if !only_a_b(word) {
-        return false;
-    }
-
-    let n = word.len();
-    if n < 8 {
-        return false;
-    }
-    let suffix_ok = ends_with_ababxx(word);
-    let prefix_ok = match block_end_index(word) {
-        Some(end) => end <= n - 6,
-        None => false,
-    };
-    prefix_ok && suffix_ok
+    ext_automaton_accepts(word)
 }
 
 fn random_word<R: Rng + ?Sized>(rng: &mut R, min_len: usize, max_len: usize) -> String {
@@ -188,7 +272,8 @@ fn random_word<R: Rng + ?Sized>(rng: &mut R, min_len: usize, max_len: usize) -> 
 
 fn main() {
     let tests: usize = 100000;
-    let academic_regex = Regex::new("^((a|b)*aa*b(a|b)*|bb*a(a|b)*)abab(a|b)(a|b)$").unwrap();
+    let academic_regex =
+        Regex::new("^((a|b)*aa*b(a|b)*|bb*a(a|b)*)abab(a|b)(a|b)$").unwrap();
     let equivalent_regex = Regex::new("^(aa*b|bb*a)(a|b)*abab(a|b)(a|b)$").unwrap();
     let extended_pattern = r"^(?=[ab]*$)(a+b|b+a).*abab..$";
     let extended_regex = FancyRegex::new(extended_pattern).unwrap();
@@ -210,10 +295,16 @@ fn main() {
             && r_academic == r_extended_re)
         {
             println!("Word: {}", word);
-            println!("academic regex ((a|b)*aa*b(a|b)*|bb*a(a|b)*)abab(a|b)(a|b): {}", r_academic);
-            println!("equivalent regex (aa*b|bb*a)(a|b)*abab(a|b)(a|b): {}", r_equiv);
+            println!(
+                "academic regex ((a|b)*aa*b(a|b)*|bb*a(a|b)*)abab(a|b)(a|b): {}",
+                r_academic
+            );
+            println!(
+                "equivalent regex (aa*b|bb*a)(a|b)*abab(a|b)(a|b): {}",
+                r_equiv
+            );
             println!("extended regex {}: {}", extended_pattern, r_extended_re);
-            println!("extended regex (manual implementation): {}", r_extended);
+            println!("extended regex (manual automaton): {}", r_extended);
             println!("DFA: {}", r_dfa);
             println!("NFA: {}", r_nfa);
             println!("AFA: {}", r_afa);
