@@ -14,7 +14,7 @@ struct Grammar {
     rules_by_lhs: Vec<Vec<usize>>,
 }
 
-struct EarleyWorkspace {
+struct ParseState {
     chart: Vec<HashSet<u64>>,
     agenda: Vec<Vec<u64>>,
     temp: Vec<u64>,
@@ -48,7 +48,7 @@ fn item_origin(x: u64) -> usize {
     ((x >> 32) & 0xFFu64) as usize
 }
 
-fn ws_new(max_len: usize) -> EarleyWorkspace {
+fn ws_new(max_len: usize) -> ParseState {
     let mut chart: Vec<HashSet<u64>> = Vec::new();
     let mut agenda: Vec<Vec<u64>> = Vec::new();
     let mut i: usize = 0;
@@ -57,14 +57,14 @@ fn ws_new(max_len: usize) -> EarleyWorkspace {
         agenda.push(Vec::new());
         i = i + 1;
     }
-    EarleyWorkspace {
+    ParseState {
         chart: chart,
         agenda: agenda,
         temp: Vec::new(),
     }
 }
 
-fn ws_clear(ws: &mut EarleyWorkspace, used_len: usize) {
+fn ws_clear(ws: &mut ParseState, used_len: usize) {
     let mut i: usize = 0;
     while i <= used_len {
         ws.chart[i].clear();
@@ -164,14 +164,14 @@ fn finalize_grammar(
     }
 }
 
-fn add_item(ws: &mut EarleyWorkspace, col: usize, item: u64) {
+fn add_item(ws: &mut ParseState, col: usize, item: u64) {
     let inserted: bool = ws.chart[col].insert(item);
     if inserted {
         ws.agenda[col].push(item);
     }
 }
 
-fn earley_recognize(g: &Grammar, ws: &mut EarleyWorkspace, word: &Vec<u8>) -> bool {
+fn parse_recognize(g: &Grammar, ws: &mut ParseState, word: &Vec<u8>) -> bool {
     let n: usize = word.len();
     ws_clear(ws, n);
     let start_rules: &Vec<usize> = &g.rules_by_lhs[g.start];
@@ -460,9 +460,9 @@ fn run_tests(tests: usize) {
     let g0: Grammar = build_original_grammar();
     let gll: Grammar = build_ll1_intersection_grammar();
     let glr: Grammar = build_lr0_intersection_grammar();
-    let mut ws0: EarleyWorkspace = ws_new(30usize);
-    let mut wsll: EarleyWorkspace = ws_new(30usize);
-    let mut wslr: EarleyWorkspace = ws_new(30usize);
+    let mut ws0: ParseState = ws_new(30usize);
+    let mut wsll: ParseState = ws_new(30usize);
+    let mut wslr: ParseState = ws_new(30usize);
     let mut rng: u64 = 88172645463393265u64;
     let mut passed: usize = 0usize;
     for _t in 0..tests {
@@ -479,9 +479,9 @@ fn run_tests(tests: usize) {
                 word.push(b'b');
             }
         }
-        let r0: bool = earley_recognize(&g0, &mut ws0, &word);
-        let rll: bool = earley_recognize(&gll, &mut wsll, &word);
-        let rlr: bool = earley_recognize(&glr, &mut wslr, &word);
+        let r0: bool = parse_recognize(&g0, &mut ws0, &word);
+        let rll: bool = parse_recognize(&gll, &mut wsll, &word);
+        let rlr: bool = parse_recognize(&glr, &mut wslr, &word);
         let ok: bool;
         if r0 == rll && rll == rlr {
             ok = true;

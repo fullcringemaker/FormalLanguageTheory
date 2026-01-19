@@ -41,6 +41,57 @@ T &\to aTa
 \newpage
 
 \section*{Детерминизм}
+\subsection*{Доказательство недетерминированности}
+Докажу, что данный язык недетерминированный. Рассмотрим пересечение данного языка с регулярным выражением
+\[
+R = a^{+}abba(bbabbababa)^{+}(bbabbaa^{+}baba|\epsilon)
+\]
+
+Возьму два слова, получив их следующим образом:
+
+\[
+\begin{aligned}
+1)\quad \underline{S}
+&\Rightarrow a\underline{T}Ta\\
+&\Rightarrow aa^{n}\underline{T}a^{n}Ta\\
+&\Rightarrow aa^{n}\underline{S}bbSa^{n}Ta\\
+&\Rightarrow aa^{n}Sbb\underline{S}a^{n}\underline{T}a\\
+&\Rightarrow aa^{n}\underline{S}bbabbaa^{n}baba\\
+&\Rightarrow aa^{n}a\underline{T}Tabbabbaa^{n}baba\\
+&\Rightarrow aa^{n}aSbb\underline{S}\underline{T}abbabbaa^{n}baba\\
+&\Rightarrow aa^{n}(a)\underline{S}(bbabbababa)bbabbaa^{n}baba\\
+&\Rightarrow aa^{n}(a)^{n}\underline{S}(bbabbababa)^{n}bbabbaa^{n}baba\\
+&\Rightarrow aa^{n}a^{n}abba(bbabbababa)^{n}bbabbaa^{n}baba\\
+&\Rightarrow a^{2n+1}abba(bbabbababa)^{n}bbabbaa^{n}baba.
+\end{aligned}
+\]
+
+\[
+\begin{aligned}
+2)\quad \underline{S}
+&\Rightarrow a\underline{T}Ta\\
+&\Rightarrow aSbb\underline{ST}a\\
+&\Rightarrow (a)\underline{S}(bbabbababa)\\
+&\Rightarrow a^{2n+1}\underline{S}(bbabbababa)^{2n+1}\\
+&\Rightarrow a^{2n+1}abba(bbabbababa)^{2n+1}\\
+&\Rightarrow a^{2n+1}abba(bbabbababa)^{n}(bbabbababa)^{n+1}.
+\end{aligned}
+\]
+
+Оба слова имеют общий префикс $a^{2n+1}abba(bbabbababa)^{n}$. Таким образом получается:
+\[
+\begin{array}{l|l}
+a^{2n+1}abba(bbabbababa)^{n} & bbabbaa^{n}baba\\
+a^{2n+1}abba(bbabbababa)^{n} & (bbabbababa)^{n+1}
+\end{array}
+\]
+
+1) Для первого случая накачиваем \((bbabbababa)^n\) и \(a^n\). После накачки получается \(a^{2n+1}abba(bbabbababa)^{n+i}bbabbaa^{n+k}baba\). В резульате теряется равенство с блоком \(a^{2n+1}\), и слово выводится из языка. 
+
+2) Для второго случая накачиваем \((bbabbababa)^n\) и \((bbabbababa)^{n+1}\). После накачки получается \(a^{2n+1}abba(bbabbababa)^{2n+1+i}\) В резульате теряется равенство с блоком \(a^{2n+1}\), и слово выводится из языка.
+
+Следовательно, \(L\cap R\) не является DCFL. Тогда и сам язык \(L\) не является DCFL. А значит для \(L\) нельзя построить DPDA
+
 \subsection*{PDA}
 Построю PDA, распознающий грамматику G:
 \begin{center}
@@ -52,45 +103,44 @@ T &\to aTa
 \end{minipage}
 \end{center}
 
-\subsection*{Накачка}
+\subsection*{Недетерминированные переходы и примеры слов, демонстрирующих отличия в поведении стека}
+1) Недетерминированные переходы из состояния 1:
+\begin{itemize}
+\item переход по $a$ с операцией $T/TA$ в состояние $1$
+\item переход по $a$ с операцией $T/BBS$ в состояние $2$
+\end{itemize}
+
 \[
-\begin{array}{c|l}
-a^{n+1} & ababa^{n+1}baba \\
-a^{n+1} & abbabbabbaa^{n}baba
+\begin{array}{l|l|l}
+aa^{2n} & baba^{2n}baba & \text{(для первого указанного перехода)}\\
+aa^{2n} & (ababaaabbabb)^{n}ababa & \text{(для второго указанного перехода)}
 \end{array}
 \]
 
-\textbf{Пояснение:}
+2) Недетерминированные переходы из состояния 2:
 \begin{itemize}
-\item Из предоставленного рисунка автомата видно, что недетерминизм происходит в состоянии $1$ при чтении символа $a$ и вершине стека $T$: можно либо сделать переход $a,\,T/TA$ (остаться в состоянии $1$), либо $a,\,T/BBS$ (уйти в состояние $2$).
-
-\item Накачиваем общий префикс $a^{n+1}$: выбираем $n$ большим, чтобы два слова имели
-сколь угодно длинный общий префикс и дошли до одной и той же точки обработки, после которой слова начинают различаться.
-
-\item После чтения общего префикса в стеке накоплен запас, зависящий от $n$:
-сверху остаётся $T$, а ниже лежит $A^n$.
-
-\item Для первого слова сразу после общей части идёт фрагмент $bab\ldots$.
-Если после символа a в стеке оказывается блок $BB\ldots$, то при чтении первой $b$
-снимается только одна $B$, а на следующем символе $a$ на вершине стека остаётся $B$.
-Входной символ $a$ не согласуется с вершиной стека $B$, поэтому дальнейшая обработка невозможна.
-
-\item Для второго слова сразу после общей части идёт фрагмент $bba\ldots$.
-Если после символа a в стеке не появляется блок из двух $B$, а остаётся структура вида $T A^{n+1}\ldots$,
-то на первой $b$ снимается $T$ (стек начинает обрабатываться для случая, рассчитанного на подслово $bab$). Однако на входе стоит вторая $b$, а не $a$, поэтому дальнейшая обработка невозможна.
+\item переход по $a$ c операцией $x/TATAx$ в состояние $1$
+\item переход по $a$ с операцией $x/BBSTAx$ в состояние $2$
 \end{itemize}
 
+\[
+\begin{array}{l|l|l}
+aa^{2n}bba & (bbabbaababa)^{n} & \text{(для первого указанного перехода)}\\
+aa^{2n}bba & (bbabbababa)^{2n} & \text{(для второго указанного перехода)}
+\end{array}
+\]
+
 \section*{Беспрефиксность}
-Рассмотрим слово $w_1=\texttt{aababababa}$. Слово $w_1$ принадлежит языку и выводится следующим образом:
+Рассмотрим слово $w_1=aababababa$. Слово $w_1$ принадлежит языку и выводится следующим образом:
 \[
 \begin{aligned}
 S &\Rightarrow a\underline{T}Ta \\
   &\Rightarrow aa\underline{T}aTa \\
   &\Rightarrow aababa\underline{T}a \\
-  &\Rightarrow \texttt{aababababa}.
+  &\Rightarrow aababababa
 \end{aligned}
 \]
-При добавлении $\texttt{abbabbababa}$ в виде суффикса к $w_1$ получится $w_2=\texttt{aababababaabbabbababa}$.
+При добавлении $abbabbababa$ в виде суффикса к $w_1$ получится $w_2=aababababaabbabbababa$.
 Слово $w_2$ также принадлежит языку и выводится следующим образом:
 \[
 \begin{aligned}
@@ -101,7 +151,7 @@ S &\Rightarrow a\underline{T}Ta \\
   &\Rightarrow aababa\underline{T}aabbSTa \\
   &\Rightarrow aababababaabb\underline{S}Ta \\
   &\Rightarrow aababababaabbabba\underline{T}a \\
-  &\Rightarrow \texttt{aababababaabbabbababa}.
+  &\Rightarrow aababababaabbabbababa
 \end{aligned}
 \]
 
