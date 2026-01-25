@@ -1,0 +1,381 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+\usepackage{geometry}
+\usepackage{tabularx} 
+\geometry{margin=2.5cm}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{enumitem}
+\usepackage{tabularx}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=black,urlcolor=blue}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+\begin{document}
+{\Large\bfseries
+\begin{flushleft}
+Отчет по лабораторной работе №3 (Вариант №21)
+\end{flushleft}}
+\vspace{0.5em}\hrule\vspace{1.2em}
+
+\section*{Задание}
+\begin{itemize}
+  \item Проанализировать язык на детермизим. Построить PDA: в случае детерминированного языка построить DPDA, в случае недетерминированного языка - PDA без избыточного недетерминизма (для каждого недетерминированного перехода привести пример слов с общим длинным префиксом, в которых на переходе существенно отличается поведение стека). 
+  \item Проанализировать язык на беспрефиксность.
+  \item В случае детерминированного языка - проанализировать его на LL-свойство (дополнительное задание).
+  \item Построить КС-грамматику для языка, если таковой нет (в случае LL-языка - удобно использовать LL(k)-грамматику). Пересечь её с регулярными аппроксимациями сверху, полученными First, Follow множеств («LL(1)-автомат»), и позиционного автомата («LR(0)-автомат»).
+\end{itemize}
+
+\section*{Исходная грамматика G}
+\[
+\begin{aligned}
+S &\to aTTa \\
+T &\to SbbS \\
+S &\to abba \\
+T &\to bab \\
+T &\to aTa
+\end{aligned}
+\]
+
+\newpage
+
+\section*{Детерминизм}
+\subsection*{Доказательство недетерминированности}
+Докажу, что данный язык недетерминированный. Рассмотрим пересечение данного языка с регулярным выражением
+\[
+R = a^{+}abba(bbabbababa)^{+}(bbabbaa^{+}baba|\epsilon)
+\]
+
+Возьму два слова, получив их следующим образом:
+
+\[
+\begin{aligned}
+1)\quad \underline{S}
+&\Rightarrow a\underline{T}Ta\\
+&\Rightarrow aa^{n}\underline{T}a^{n}Ta\\
+&\Rightarrow aa^{n}\underline{S}bbSa^{n}Ta\\
+&\Rightarrow aa^{n}Sbb\underline{S}a^{n}\underline{T}a\\
+&\Rightarrow aa^{n}\underline{S}bbabbaa^{n}baba\\
+&\Rightarrow aa^{n}a\underline{T}Tabbabbaa^{n}baba\\
+&\Rightarrow aa^{n}aSbb\underline{S}\underline{T}abbabbaa^{n}baba\\
+&\Rightarrow aa^{n}(a)\underline{S}(bbabbababa)bbabbaa^{n}baba\\
+&\Rightarrow aa^{n}(a)^{n}\underline{S}(bbabbababa)^{n}bbabbaa^{n}baba\\
+&\Rightarrow aa^{n}a^{n}abba(bbabbababa)^{n}bbabbaa^{n}baba\\
+&\Rightarrow a^{2n+1}abba(bbabbababa)^{n}bbabbaa^{n}baba.
+\end{aligned}
+\]
+
+\[
+\begin{aligned}
+2)\quad \underline{S}
+&\Rightarrow a\underline{T}Ta\\
+&\Rightarrow aSbb\underline{ST}a\\
+&\Rightarrow (a)\underline{S}(bbabbababa)\\
+&\Rightarrow a^{2n+1}\underline{S}(bbabbababa)^{2n+1}\\
+&\Rightarrow a^{2n+1}abba(bbabbababa)^{2n+1}\\
+&\Rightarrow a^{2n+1}abba(bbabbababa)^{n}(bbabbababa)^{n+1}.
+\end{aligned}
+\]
+
+Оба слова имеют общий префикс $a^{2n+1}abba(bbabbababa)^{n}$. Таким образом получается:
+\[
+\begin{array}{l|l}
+a^{2n+1}abba(bbabbababa)^{n} & bbabbaa^{n}baba\\
+a^{2n+1}abba(bbabbababa)^{n} & (bbabbababa)^{n+1}
+\end{array}
+\]
+
+1) Для первого случая накачиваем \((bbabbababa)^n\) и \(a^n\). После накачки получается \(a^{2n+1}abba(bbabbababa)^{n+i}bbabbaa^{n+k}baba\). В резульате теряется равенство с блоком \(a^{2n+1}\), и слово выводится из языка. 
+
+2) Для второго случая накачиваем \((bbabbababa)^n\) и \((bbabbababa)^{n+1}\). После накачки получается \(a^{2n+1}abba(bbabbababa)^{2n+1+i}\) В резульате теряется равенство с блоком \(a^{2n+1}\), и слово выводится из языка.
+
+Следовательно, \(L\cap R\) не является DCFL. Тогда и сам язык \(L\) не является DCFL. А значит для \(L\) нельзя построить DPDA
+
+\subsection*{PDA}
+Построю PDA, распознающий грамматику G:
+\begin{center}
+\begin{minipage}{\linewidth}
+\centering
+\includegraphics[width=1.0\linewidth]{pda.jpg}
+\captionof{Рис. 1: Стековый автомат (PDA)}
+\label{fig:pda.jpg}
+\end{minipage}
+\end{center}
+
+\subsection*{Недетерминированные переходы и примеры слов, демонстрирующих отличия в поведении стека}
+1) Недетерминированные переходы из состояния 1:
+\begin{itemize}
+\item переход по $a$ с операцией $T/TA$ в состояние $1$
+\item переход по $a$ с операцией $T/BBS$ в состояние $2$
+\end{itemize}
+
+\[
+\begin{array}{l|l|l}
+aa^{2n} & baba^{2n}baba & \text{(для первого указанного перехода)}\\
+aa^{2n} & (ababaaabbabb)^{n}ababa & \text{(для второго указанного перехода)}
+\end{array}
+\]
+
+2) Недетерминированные переходы из состояния 2:
+\begin{itemize}
+\item переход по $a$ c операцией $x/TATAx$ в состояние $1$
+\item переход по $a$ с операцией $x/BBSTAx$ в состояние $2$
+\end{itemize}
+
+\[
+\begin{array}{l|l|l}
+aa^{2n}bba & (bbabbaababa)^{n} & \text{(для первого указанного перехода)}\\
+aa^{2n}bba & (bbabbababa)^{2n} & \text{(для второго указанного перехода)}
+\end{array}
+\]
+
+\section*{Беспрефиксность}
+Рассмотрим слово $w_1=aababababa$. Слово $w_1$ принадлежит языку и выводится следующим образом:
+\[
+\begin{aligned}
+S &\Rightarrow a\underline{T}Ta \\
+  &\Rightarrow aa\underline{T}aTa \\
+  &\Rightarrow aababa\underline{T}a \\
+  &\Rightarrow aababababa
+\end{aligned}
+\]
+При добавлении $abbabbababa$ в виде суффикса к $w_1$ получится $w_2=aababababaabbabbababa$.
+Слово $w_2$ также принадлежит языку и выводится следующим образом:
+\[
+\begin{aligned}
+S &\Rightarrow a\underline{T}Ta \\
+  &\Rightarrow a\underline{S}bbSTa \\
+  &\Rightarrow aa\underline{T}TabbSTa \\
+  &\Rightarrow aabab\underline{T}abbSTa \\
+  &\Rightarrow aababa\underline{T}aabbSTa \\
+  &\Rightarrow aababababaabb\underline{S}Ta \\
+  &\Rightarrow aababababaabbabba\underline{T}a \\
+  &\Rightarrow aababababaabbabbababa
+\end{aligned}
+\]
+
+Таким образом, $w_1$ является префиксом $w_2$. Значит, язык, задаваемый этой КС-грамматикой, не является беспрефиксным.
+
+\section*{LL-свойства}
+LL-свойство требует, чтобы язык был детерминированным.\\
+Мой язык недетерминирован, следовательно этот язык не обладает LL-свойством
+
+\section*{Построение аппроксимаций}
+\subsection*{LL(1)-аппроксимация}
+Для моей грамматики найду First, Follow, Last множества:
+\[
+\mathrm{First}(L(G))=\{a_{1},\,a_{3}\}
+\]
+
+\[
+\mathrm{Follow}(L(G))=\left\{
+\begin{aligned}
+& a_{1}a_{7},\,a_{1}a_{1},\,a_{1}a_{3},\,a_{1}b_{11},\\
+& a_{2}a_{7},\,a_{2}a_{1},\,a_{2}a_{3},\,a_{2}b_{11},\,a_{2}a_{2},\,a_{2}b_{9},\,a_{2}a_{8},\\
+& a_{3}b_{4},\\
+& b_{4}b_{5},\\
+& b_{5}a_{6},\\
+& a_{6}a_{7},\,a_{6}a_{1},\,a_{6}a_{3},\,a_{6}b_{11},\,a_{6}a_{2},\,a_{6}b_{9},\,a_{6}a_{8},\\
+& a_{7}a_{7},\,a_{7}a_{1},\,a_{7}a_{3},\,a_{7}b_{11},\\
+& a_{8}a_{7},\,a_{8}a_{1},\,a_{8}a_{3},\,a_{8}b_{11},\,a_{8}a_{2},\,a_{8}a_{8},\\
+& b_{9}b_{10},\\
+& b_{10}a_{1},\,b_{10}a_{3},\\
+& b_{11}a_{12},\\
+& a_{12}b_{13},\\
+& b_{13}a_{7},\,b_{13}a_{1},\,b_{13}a_{3},\,b_{13}b_{11},\,b_{13}a_{2},\,b_{13}a_{8}
+\end{aligned}
+\right\}
+\]
+
+\[
+\mathrm{Last}(L(G))=\{a_{2},\,a_{6}\}
+\]
+
+На основе вычисленных множеств получаю следующий НКА:
+\begin{center}
+\begin{minipage}{\linewidth}
+\centering
+\includegraphics[width=1.0\linewidth]{ll1nka.jpg}
+\captionof{Рис. 2: LL(1)-аппроксимация сверху}
+\label{fig:ll1nka.jpg}
+\end{minipage}
+\end{center}
+
+\begin{center}
+\begin{minipage}{\linewidth}
+\centering
+\includegraphics[width=1.0\linewidth]{ll1nkamin.jpg}
+\captionof{Рис. 3: LL(1)-аппроксимация сверху (минимизированная)}
+\label{fig:ll1nkamin.jpg}
+\end{minipage}
+\end{center}
+
+\subsection*{Правила из пересечения грамматики и LL(1)-аппроксимации}
+\[
+\begin{aligned}
+\langle1,T,1\rangle&\to a\langle1,T,1\rangle a\\
+\langle1,T,1\rangle&\to a\langle1,T,8\rangle a\\
+\langle3,T,1\rangle&\to a\langle3,T,1\rangle a\\
+\langle3,T,1\rangle&\to a\langle3,T,8\rangle a\\
+\langle3,T,1\rangle&\to a\langle3,T,10\rangle a\\
+\langle8,T,1\rangle&\to a\langle1,T,1\rangle a\\
+\langle8,T,1\rangle&\to a\langle1,T,8\rangle a\\
+\langle10,T,1\rangle&\to a\langle1,T,1\rangle a\\
+\langle10,T,1\rangle&\to a\langle1,T,8\rangle a\\
+\langle1,T,1\rangle&\to \langle1,S,1\rangle bb\langle7,S,1\rangle\\
+\langle3,T,1\rangle&\to \langle3,S,1\rangle bb\langle7,S,1\rangle\\
+\langle3,T,1\rangle&\to \langle3,S,10\rangle bb\langle0,S,1\rangle\\
+\langle3,T,10\rangle&\to \langle3,S,10\rangle bb\langle0,S,10\rangle\\
+\langle8,T,1\rangle&\to \langle8,S,1\rangle bb\langle7,S,1\rangle\\
+\langle10,T,1\rangle&\to \langle10,S,1\rangle bb\langle7,S,1\rangle\\
+\langle1,T,8\rangle&\to bab\\
+\langle3,T,8\rangle&\to bab\\
+\langle8,T,8\rangle&\to bab\\
+\langle10,T,8\rangle&\to bab\\
+\langle0,S,1\rangle&\to a\langle3,T,1\rangle\langle1,T,1\rangle a\\
+\langle0,S,1\rangle&\to a\langle3,T,1\rangle\langle1,T,8\rangle a\\
+\langle0,S,1\rangle&\to a\langle3,T,8\rangle\langle8,T,1\rangle a\\
+\langle0,S,1\rangle&\to a\langle3,T,8\rangle\langle8,T,8\rangle a\\
+\langle0,S,1\rangle&\to a\langle3,T,10\rangle\langle10,T,1\rangle a\\
+\langle0,S,1\rangle&\to a\langle3,T,10\rangle\langle10,T,8\rangle a\\
+\langle1,S,1\rangle&\to a\langle1,T,1\rangle\langle1,T,1\rangle a\\
+\langle1,S,1\rangle&\to a\langle1,T,1\rangle\langle1,T,8\rangle a\\
+\langle1,S,1\rangle&\to a\langle1,T,8\rangle\langle8,T,1\rangle a\\
+\langle1,S,1\rangle&\to a\langle1,T,8\rangle\langle8,T,8\rangle a\\
+\end{aligned}
+\]
+
+\[
+\begin{aligned}
+\langle3,S,1\rangle&\to a\langle3,T,1\rangle\langle1,T,1\rangle a\\
+\langle3,S,1\rangle&\to a\langle3,T,1\rangle\langle1,T,8\rangle a\\
+\langle3,S,1\rangle&\to a\langle3,T,8\rangle\langle8,T,1\rangle a\\
+\langle3,S,1\rangle&\to a\langle3,T,8\rangle\langle8,T,8\rangle a\\
+\langle3,S,1\rangle&\to a\langle3,T,10\rangle\langle10,T,1\rangle a\\
+\langle3,S,1\rangle&\to a\langle3,T,10\rangle\langle10,T,8\rangle a\\
+\langle7,S,1\rangle&\to a\langle1,T,1\rangle\langle1,T,1\rangle a\\
+\langle7,S,1\rangle&\to a\langle1,T,1\rangle\langle1,T,8\rangle a\\
+\langle7,S,1\rangle&\to a\langle1,T,8\rangle\langle8,T,1\rangle a\\
+\langle7,S,1\rangle&\to a\langle1,T,8\rangle\langle8,T,8\rangle a\\
+\langle8,S,1\rangle&\to a\langle1,T,1\rangle\langle1,T,1\rangle a\\
+\langle8,S,1\rangle&\to a\langle1,T,1\rangle\langle1,T,8\rangle a\\
+\langle8,S,1\rangle&\to a\langle1,T,8\rangle\langle8,T,1\rangle a\\
+\langle8,S,1\rangle&\to a\langle1,T,8\rangle\langle8,T,8\rangle a\\
+\langle10,S,1\rangle&\to a\langle1,T,1\rangle\langle1,T,1\rangle a\\
+\langle10,S,1\rangle&\to a\langle1,T,1\rangle\langle1,T,8\rangle a\\
+\langle10,S,1\rangle&\to a\langle1,T,8\rangle\langle8,T,1\rangle a\\
+\langle10,S,1\rangle&\to a\langle1,T,8\rangle\langle8,T,8\rangle a\\
+\langle0,S,10\rangle&\to abba\\
+\langle1,S,1\rangle&\to abba\\
+\langle3,S,10\rangle&\to abba\\
+\langle7,S,1\rangle&\to abba\\
+\langle8,S,1\rangle&\to abba\\
+\langle10,S,1\rangle&\to abba
+\end{aligned}
+\]
+
+\newpage
+
+\subsection*{LR(0)-аппроксимация}
+\begin{center}
+\begin{minipage}{\linewidth}
+\centering
+\includegraphics[width=1.0\linewidth]{lr0.jpg}
+\captionof{Рис. 4: Позиционный автомат}
+\label{fig:lr0.jpg}
+\end{minipage}
+\end{center}
+
+\begin{center}
+\begin{minipage}{\linewidth}
+\centering
+\includegraphics[width=1.0\linewidth]{promezhpredst.jpg}
+\captionof{Рис. 5: Промежуточное представление позиционного автомата}
+\label{fig:promezhpredst.jpg}
+\end{minipage}
+\end{center}
+
+\begin{center}
+\begin{minipage}{\linewidth}
+\centering
+\includegraphics[width=1.0\linewidth]{epspereh.jpg}
+\captionof{Рис. 6: Замена переходов по нетерминалам на $\epsilon$-переходы}
+\label{fig:epspereh.jpg}
+\end{minipage}
+\end{center}
+
+\begin{center}
+\begin{minipage}{\linewidth}
+\centering
+\includegraphics[width=1.0\linewidth]{lr0min.jpg}
+\captionof{Рис. 7: LR(0)-аппроксимация сверху}
+\label{fig:lr0min.jpg}
+\end{minipage}
+\end{center}
+
+\subsection*{Правила из пересечения грамматики и LR(0)-аппроксимации}
+\[
+\begin{aligned}
+\langle1,T,1\rangle&\to a\langle1,T,1\rangle a\\
+\langle1,T,1\rangle&\to a\langle1,T,7\rangle a\\
+\langle7,T,1\rangle&\to a\langle1,T,1\rangle a\\
+\langle7,T,1\rangle&\to a\langle1,T,7\rangle a\\
+\langle8,T,1\rangle&\to a\langle1,T,1\rangle a\\
+\langle8,T,1\rangle&\to a\langle1,T,7\rangle a\\
+\langle10,T,1\rangle&\to a\langle10,T,1\rangle a\\
+\langle10,T,1\rangle&\to a\langle10,T,7\rangle a\\
+\langle10,T,1\rangle&\to a\langle10,T,8\rangle a\\
+\langle1,T,1\rangle&\to \langle1,S,1\rangle bb\langle6,S,1\rangle\\
+\langle7,T,1\rangle&\to \langle7,S,1\rangle bb\langle6,S,1\rangle\\
+\langle8,T,1\rangle&\to \langle8,S,1\rangle bb\langle6,S,1\rangle\\
+\langle10,T,1\rangle&\to \langle10,S,1\rangle bb\langle6,S,1\rangle\\
+\end{aligned}
+\]
+
+\[
+\begin{aligned}
+\langle10,T,1\rangle&\to \langle10,S,8\rangle bb\langle0,S,1\rangle\\
+\langle10,T,8\rangle&\to \langle10,S,8\rangle bb\langle0,S,8\rangle\\
+\langle1,T,7\rangle&\to bab\\
+\langle7,T,7\rangle&\to bab\\
+\langle8,T,7\rangle&\to bab\\
+\langle10,T,7\rangle&\to bab\\
+\langle0,S,1\rangle&\to a\langle10,T,1\rangle\langle1,T,1\rangle a\\
+\langle0,S,1\rangle&\to a\langle10,T,1\rangle\langle1,T,7\rangle a\\
+\langle0,S,1\rangle&\to a\langle10,T,7\rangle\langle7,T,1\rangle a\\
+\langle0,S,1\rangle&\to a\langle10,T,7\rangle\langle7,T,7\rangle a\\
+\langle0,S,1\rangle&\to a\langle10,T,8\rangle\langle8,T,1\rangle a\\
+\langle0,S,1\rangle&\to a\langle10,T,8\rangle\langle8,T,7\rangle a\\
+\langle1,S,1\rangle&\to a\langle1,T,1\rangle\langle1,T,1\rangle a\\
+\langle1,S,1\rangle&\to a\langle1,T,1\rangle\langle1,T,7\rangle a\\
+\langle1,S,1\rangle&\to a\langle1,T,7\rangle\langle7,T,1\rangle a\\
+\langle1,S,1\rangle&\to a\langle1,T,7\rangle\langle7,T,7\rangle a\\
+\langle6,S,1\rangle&\to a\langle1,T,1\rangle\langle1,T,1\rangle a\\
+\langle6,S,1\rangle&\to a\langle1,T,1\rangle\langle1,T,7\rangle a\\
+\langle6,S,1\rangle&\to a\langle1,T,7\rangle\langle7,T,1\rangle a\\
+\langle6,S,1\rangle&\to a\langle1,T,7\rangle\langle7,T,7\rangle a\\
+\langle7,S,1\rangle&\to a\langle1,T,1\rangle\langle1,T,1\rangle a\\
+\langle7,S,1\rangle&\to a\langle1,T,1\rangle\langle1,T,7\rangle a\\
+\langle7,S,1\rangle&\to a\langle1,T,7\rangle\langle7,T,1\rangle a\\
+\langle7,S,1\rangle&\to a\langle1,T,7\rangle\langle7,T,7\rangle a\\
+\langle8,S,1\rangle&\to a\langle1,T,1\rangle\langle1,T,1\rangle a\\
+\langle8,S,1\rangle&\to a\langle1,T,1\rangle\langle1,T,7\rangle a\\
+\langle8,S,1\rangle&\to a\langle1,T,7\rangle\langle7,T,1\rangle a\\
+\langle8,S,1\rangle&\to a\langle1,T,7\rangle\langle7,T,7\rangle a\\
+\langle10,S,1\rangle&\to a\langle10,T,1\rangle\langle1,T,1\rangle a\\
+\langle10,S,1\rangle&\to a\langle10,T,1\rangle\langle1,T,7\rangle a\\
+\langle10,S,1\rangle&\to a\langle10,T,7\rangle\langle7,T,1\rangle a\\
+\langle10,S,1\rangle&\to a\langle10,T,7\rangle\langle7,T,7\rangle a\\
+\langle10,S,1\rangle&\to a\langle10,T,8\rangle\langle8,T,1\rangle a\\
+\langle10,S,1\rangle&\to a\langle10,T,8\rangle\langle8,T,7\rangle a\\
+\langle0,S,8\rangle&\to abba\\
+\langle1,S,1\rangle&\to abba\\
+\langle6,S,1\rangle&\to abba\\
+\langle7,S,1\rangle&\to abba\\
+\langle8,S,1\rangle&\to abba\\
+\langle10,S,8\rangle&\to abba
+\end{aligned}
+\]
+
+\end{document}
